@@ -67,8 +67,6 @@ def precipitation():
     precipitation_data = {date: prcp for date, prcp in results}
     return jsonify(precipitation_data)
 
-
-
 # Define the /api/v1.0/stations route
 @app.route("/api/v1.0/stations")
 def stations():
@@ -111,11 +109,15 @@ def tobs():
     return jsonify(tobs_data)
 
 # Define the /api/v1.0/<start> route
-@app.route("/api/v1.0/<start>")
+@app.route("/api/v1.0/<string:start>")
 def calc_temps_start(start):
     session = Session(engine)
 
-    start_date = dt.datetime.strptime(start, '%Y-%m-%d')
+    try:
+        start_date = dt.datetime.strptime(start, '%Y-%m-%d')
+    except ValueError:
+        session.close()
+        return jsonify({"error": "Invalid date format. Please use YYYY-MM-DD."})
 
     # Query to calculate TMIN, TAVG, and TMAX for dates greater than or equal to the start date
     results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
@@ -137,12 +139,16 @@ def calc_temps_start(start):
         return jsonify({"error": "No data found for the specified start date."})
 
 # Define the /api/v1.0/<start>/<end> route
-@app.route("/api/v1.0/<start>/<end>")
+@app.route("/api/v1.0/<string:start>/<string:end>")
 def calc_temps_start_end(start, end):
     session = Session(engine)
 
-    start_date = dt.datetime.strptime(start, '%Y-%m-%d')
-    end_date = dt.datetime.strptime(end, '%Y-%m-%d')
+    try:
+        start_date = dt.datetime.strptime(start, '%Y-%m-%d')
+        end_date = dt.datetime.strptime(end, '%Y-%m-%d')
+    except ValueError:
+        session.close()
+        return jsonify({"error": "Invalid date format. Please use YYYY-MM-DD."})
 
     # Query to calculate TMIN, TAVG, and TMAX for dates between start and end (inclusive)
     results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
@@ -166,8 +172,3 @@ def calc_temps_start_end(start, end):
 # Run the app
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-
-
-
